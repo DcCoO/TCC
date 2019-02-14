@@ -1,2 +1,2 @@
 TARGET=proposta
-include ~/.pdflatex-makefile/Makefile.include
+include ../latex/Makefile.include
