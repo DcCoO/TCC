@@ -4,24 +4,21 @@ using namespace std;
 using namespace std::chrono;
 
 #define foreach(exp) for(auto exp)
-
 #define pv(v) foreach(e : v){ cout<<e<<" "; } cout<<endl;
 #define pm(m) foreach(v : m){ foreach(e : v){ cout<<e<<" "; } cout<<endl; }
 #define pc(c) foreach(m : c){ foreach(v : m){ foreach(e : v){ cout<<e<<" "; } cout<<endl; } cout<<"--------------"<<endl; } cout<<endl;
-#define MAXSIZE 1010
 
 inline int lg(int n){return (int) floor(log2(n));}
 
 //arvore inicial
-vector<int> tree[MAXSIZE];
-int parent[MAXSIZE];
+vector<int> *tree;
 
 //vertices visitados pela dfs
-int dfsPath[2 * MAXSIZE - 1];
+int *dfsPath;
 //nivel dos vertices visitados pela dfs
-int dfsLevel[MAXSIZE];
+int *dfsLevel;
 //indice da primeira ocorrencia de cada vertice dfs
-int dfsIndex[MAXSIZE];
+int *dfsIndex;
 
 int n;
 
@@ -50,9 +47,9 @@ int get_lowest(int u, int v, int w = -1){
 }
 
 //array para preprocessar o minimo para frente em cada bloco
-int minForward[2 * MAXSIZE - 1];
+int *minForward;
 //array para preprocessar o minimo para tras em cada bloco
-int minBackward[2 * MAXSIZE - 1];
+int *minBackward;
 
 void build_blockmin(){
     int SIZE = 2 * n - 1;
@@ -213,11 +210,21 @@ int LCA(int u, int v){
 
 
 int main(){
-    freopen("complete1.txt", "r", stdin);
+    freopen("complete15.txt", "r", stdin);
+    //freopen("out1.txt", "w", stdout);
 
     position = 0;
     int s, u, v; cin>>n;
-    for(int i = 0; i < n; i++) tree[i].clear();
+
+    //INITIALIZING MEMORY
+    tree = new vector<int>[n];
+    dfsPath  = new int[n << 1];
+    dfsLevel = new int[n << 1];
+    dfsIndex = new int[n];
+    minForward = new int[n << 1];
+    minBackward = new int[n << 1];
+
+    for(int i = 0; i < n; i++) tree[i] = vector<int>();
 
     for(int i = 0; i < n; i++) {
         cin>>s;
@@ -236,13 +243,13 @@ int main(){
     if(n > 8) build_blocktable();
 
     high_resolution_clock::time_point t2 = high_resolution_clock::now();
-    auto duration = duration_cast<microseconds>( t2 - t1 ).count();
+    auto duration = duration_cast<nanoseconds>( t2 - t1 ).count();
     cout << "PREPROCESSING: "<<duration<<endl;
 
 
     //QUERYING
-    int numLCAS = 0;
-    t1 = high_resolution_clock::now();
+    long long int numLCAS = 0;
+    high_resolution_clock::time_point t3 = high_resolution_clock::now();
     for(int i = 0; i < n; i++){
         for(int j = i; j < n; j++){
             LCA(i, j);
@@ -250,8 +257,8 @@ int main(){
             numLCAS++;
         }
     }
-    t2 = high_resolution_clock::now();
-    duration = duration_cast<microseconds>( t2 - t1 ).count();
-    cout << "QUERY AVERAGE: "<<(duration / numLCAS)<<endl;
+    high_resolution_clock::time_point t4 = high_resolution_clock::now();
+    duration = duration_cast<nanoseconds>( t4 - t3 ).count();
+    cout<<"QUERY AVERAGE: "<<(duration / numLCAS)<<endl;
 
 }
