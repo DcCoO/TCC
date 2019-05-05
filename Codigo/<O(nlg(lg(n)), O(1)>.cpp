@@ -4,7 +4,6 @@ using namespace std;
 using namespace std::chrono;
 
 #define foreach(exp) for(auto exp)
-#define MAXSIZE 1010
 #define pv(v, s) for(int ye = 0; ye < s; ye++){ cout<<v[ye]<<" "; } cout<<endl<<endl;
 #define pm(m) foreach(v : m){ foreach(e : v){ cout<<e<<" "; } cout<<endl; } cout<<endl;
 #define pc(c) foreach(m : c){ foreach(v : m){ foreach(e : v){ cout<<e<<" "; } cout<<endl; } cout<<"--------------"<<endl; } cout<<endl;
@@ -13,16 +12,16 @@ using namespace std::chrono;
 inline int lg(int n){return (int) floor(log2(n));}
 
 //arvore inicial
-vector<int> tree[MAXSIZE];
+vector<int> *tree;
 
 int n;
 
 //vertices visitados pela dfs
-int dfsPath[2 * MAXSIZE - 1];
+int *dfsPath;//[2 * MAXSIZE - 1];
 //nivel dos vertices visitados pela dfs
-int dfsLevel[MAXSIZE];
+int *dfsLevel;//[MAXSIZE];
 //indice da primeira ocorrencia de cada vertice dfs
-int dfsIndex[MAXSIZE];
+int *dfsIndex;//[MAXSIZE];
 
 int position;
 
@@ -126,10 +125,17 @@ int LCA(int u, int v){
 
 int main(){
 
-    freopen("complete1.txt", "r", stdin);
-
+    freopen("complete15.txt", "r", stdin);
+    //freopen("out2.txt", "w", stdout);
     position = 0;
     int s, u, v; cin>>n;
+
+    //INITIALIZING MEMORY
+    tree = new vector<int>[n];
+    dfsPath  = new int[n << 1];
+    dfsLevel = new int[n << 1];
+    dfsIndex = new int[n];
+
     for(int i = 0; i < n; i++) tree[i].clear();
 
     for(int i = 0; i < n; i++) {
@@ -153,7 +159,7 @@ int main(){
     else cout << "PREPROCESSING: 0"<<endl;
 
     //QUERYING
-    int numLCAS = 0;
+    long long int numLCAS = 0;
     high_resolution_clock::time_point t1 = high_resolution_clock::now();
     for(int i = 0; i < n; i++){
         for(int j = i; j < n; j++){
@@ -163,6 +169,6 @@ int main(){
         }
     }
     high_resolution_clock::time_point t2 = high_resolution_clock::now();
-    auto duration = duration_cast<microseconds>( t2 - t1 ).count();
-    cout << "QUERY AVERAGE: "<<(duration / numLCAS)<<endl;
+    auto duration = duration_cast<nanoseconds>( t2 - t1 ).count();
+    cout<<"QUERY AVERAGE: "<<(duration / numLCAS)<<endl;
 }
