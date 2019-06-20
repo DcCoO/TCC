@@ -8,6 +8,7 @@ using namespace std::chrono;
 #define pm(m) foreach(v : m){ foreach(e : v){ cout<<e<<" "; } cout<<endl; } cout<<endl;
 #define pc(c) foreach(m : c){ foreach(v : m){ foreach(e : v){ cout<<e<<" "; } cout<<endl; } cout<<"--------------"<<endl; } cout<<endl;
 
+#define test 0
 
 inline int lg(int n){return (int) floor(log2(n));}
 
@@ -47,33 +48,22 @@ int get_lowest(int u, int v, int w = -1){
     return dfsLevel[u] <= dfsLevel[v] ? u : v;
 }
 
-void build_blocktable(){
+//array para preprocessar o minimo para frente em cada bloco
+int *minForward;
+//array para preprocessar o minimo para tras em cada bloco
+int *minBackward;
+
+void build_blockmin(){
     int SIZE = 2 * n - 1;
     int blockSize = lg(SIZE);
-    int numBlocks = SIZE / blockSize + (SIZE % blockSize != 0);
-    int blockWidth = lg(blockSize) + 1;
-    //numBlocks blocos de tamanho blockSize x blockWidth
-    blocktable = vector<vector<vector<int> > >(numBlocks);
-    for(int i = 0; i < numBlocks; i++) blocktable[i] = vector<vector<int> >(blockSize);
-    for(int i = 0; i < numBlocks; i++) for(int j = 0; j < blockSize; j++) blocktable[i][j] = vector<int>(blockWidth);
 
-    position = 0;
-    for(int block = 0; block < numBlocks; block++){
-        for(int i = 0; i < blockSize; i++) blocktable[block][i][0] = dfsPath[min(position++, 2 * n - 2)];
-        int power = 1;
-        for(int i = 1; i < blockWidth; i++){    //para cada coluna
-            for(int j = 0, len = blockSize - (power << 1); j <= len; j++){
-                blocktable[block][j][i] = get_lowest(blocktable[block][j][i - 1], blocktable[block][j + power][i - 1]);
-            }
-            power <<= 1;
-        }
+    for(int i = 0; i < SIZE; i++){
+        minBackward[i] = (i % blockSize == 0 ? dfsPath[i] : get_lowest(dfsPath[i], minBackward[i - 1]));
     }
-}
-
-int block_query(int block, int l, int r){
-    int num = r - l + 1;
-    int col = floor(log2(num));
-    return get_lowest(blocktable[block][l][col], blocktable[block][l + num - (1<<col)][col]);
+    minForward[SIZE - 1] = dfsPath[SIZE - 1];
+    for(int i = SIZE - 2; i >= 0; i--){
+        minForward[i] = (i % blockSize == blockSize - 1 ? dfsPath[i] : get_lowest(dfsPath[i], minForward[i + 1]));
+    }
 }
 
 void build_table(){
@@ -86,7 +76,7 @@ void build_table(){
     table = vector<vector<int> >(numBlocks);
     for(int i = 0; i < numBlocks; i++) table[i] = vector<int>(cols);
 
-    for(int i = 0; i < numBlocks; i++) table[i][0] = block_query(i, 0, blockSize - 1);
+    for(int i = 0; i < numBlocks; i++) table[i][0] = minForward[i * blockSize];
 
     int power = 1;
     for(int i = 1; i < cols; i++){    //para cada coluna
@@ -98,7 +88,6 @@ void build_table(){
 }
 
 int multiblock_query(int lblock, int rblock){
-
     int num = rblock - lblock + 1;
     int col = floor(log2(num));
     return get_lowest(table[lblock][col], table[lblock + num - (1<<col)][col]);
@@ -113,20 +102,21 @@ int LCA(int u, int v){
     int lblock = l / blockSize, rblock = r / blockSize;
 
     //caso 1: consulta num unico bloco
-    if(lblock == rblock) return block_query(lblock, l % blockSize, r % blockSize);
-
-    int lmin = block_query(lblock, l % blockSize, blockSize - 1);
-    int rmin = block_query(rblock, 0, r % blockSize);
+    if(lblock == rblock) {
+        int ans = dfsPath[l];
+        for(int i = l + 1; i <= r; i++) ans = get_lowest(ans, dfsPath[i]);
+        return ans;
+    }
     //caso 2: consulta em blocos adjacentes
-    if(lblock + 1 == rblock) return get_lowest(lmin, rmin);
+    if(lblock + 1 == rblock) return get_lowest(minForward[l], minBackward[r]);
     //caso 3: consulta em blocos distantes
-    return get_lowest(lmin, multiblock_query(lblock + 1, rblock - 1), rmin);
+    return get_lowest(minForward[l], multiblock_query(lblock + 1, rblock - 1), minBackward[r]);
 }
 
 int main(){
 
     freopen("complete15.txt", "r", stdin);
-    //freopen("out2.txt", "w", stdout);
+    if(test) freopen("out3.txt", "w", stdout);
     position = 0;
     int s, u, v; cin>>n;
 
@@ -134,6 +124,8 @@ int main(){
     tree = new vector<int>[n];
     dfsPath  = new int[n << 1];
     dfsLevel = new int[n << 1];
+    minForward  = new int[n << 1];
+    minBackward = new int[n << 1];
     dfsIndex = new int[n];
 
     for(int i = 0; i < n; i++) tree[i].clear();
@@ -150,25 +142,25 @@ int main(){
     if(n > 1){
         high_resolution_clock::time_point t1 = high_resolution_clock::now();
         dfs();
-        build_blocktable();
+        build_blockmin();
         build_table();
         high_resolution_clock::time_point t2 = high_resolution_clock::now();
         auto duration = duration_cast<microseconds>( t2 - t1 ).count();
-        cout << "PREPROCESSING: "<<duration<<endl;
+        if(!test) cout << "PREPROCESSING: "<<duration<<endl;
     }
-    else cout << "PREPROCESSING: 0"<<endl;
+    else if(!test) cout << "PREPROCESSING: 0"<<endl;
 
     //QUERYING
     long long int numLCAS = 0;
     high_resolution_clock::time_point t1 = high_resolution_clock::now();
     for(int i = 0; i < n; i++){
         for(int j = i; j < n; j++){
-            LCA(i, j);
-            //cout<<"LCA("<<i<<","<<j<<") = "<<LCA(i, j)<<endl;
+            if(!test) LCA(i, j);
+            if(test) cout<<"LCA("<<i<<","<<j<<") = "<<LCA(i, j)<<endl;
             numLCAS++;
         }
     }
     high_resolution_clock::time_point t2 = high_resolution_clock::now();
     auto duration = duration_cast<nanoseconds>( t2 - t1 ).count();
-    cout<<"QUERY AVERAGE: "<<(duration / numLCAS)<<endl;
+    if(!test) cout<<"QUERY AVERAGE: "<<(duration / numLCAS)<<endl;
 }
